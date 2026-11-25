@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>初中化学记忆大挑战</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { height:100%; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(135deg,#667eea 0%,#764ba2 100%);
+    color:#2d2d44;
+    overflow:hidden;
+    user-select:none;
+  }
+  #app { position:relative; width:100%; height:100%; max-width:860px; margin:0 auto; }
+
+  /* ---------- 通用 ---------- */
+  .screen { position:absolute; inset:0; display:flex; flex-direction:column; padding:18px;
+    transition: opacity .25s, transform .25s; }
+  .hidden { opacity:0; pointer-events:none; transform:scale(.96); }
+
+  .card {
+    background:#fff; border-radius:20px; box-shadow:0 8px 24px rgba(0,0,0,.15);
+  }
+  button { font-family:inherit; cursor:pointer; border:none; }
+  .btn {
+    background:linear-gradient(135deg,#667eea,#764ba2); color:#fff;
+    font-size:17px; font-weight:600; padding:12px 26px; border-radius:14px;
+    box-shadow:0 4px 12px rgba(102,126,234,.4);
+    transition:transform .12s, box-shadow .12s;
+  }
+  .btn:active { transform:scale(.95); }
+  .btn.ghost { background:#f0f1fa; color:#667eea; box-shadow:none; }
+
+  /* ---------- 首页 ---------- */
+  #home { justify-content:center; gap:14px; }
+  .title-wrap { text-align:center; color:#fff; margin-bottom:10px; }
+  .title-wrap h1 { font-size:34px; letter-spacing:2px; text-shadow:0 3px 10px rgba(0,0,0,.25); }
+  .title-wrap .sub { font-size:14px; opacity:.9; margin-top:8px; }
+  .flask { font-size:46px; display:inline-block; animation:bounce 2.2s infinite; }
+  @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+  .mode-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .mode-card {
+    background:#fff; border-radius:18px; padding:18px 16px; display:flex; flex-direction:column;
+    gap:6px; box-shadow:0 6px 16px rgba(0,0,0,.14); text-align:left;
+    transition:transform .15s; position:relative;
+  }
+  .mode-card:active { transform:scale(.96); }
+  .mode-card .icon { font-size:30px; }
+  .mode-card .name { font-size:17px; font-weight:700; color:#33334f; }
+  .mode-card .desc { font-size:12px; color:#8a8aa0; line-height:1.4; }
+  .mode-card .stars { font-size:12px; color:#f5a623; }
+  .mode-card.wide { grid-column:span 2; flex-direction:row; align-items:center; gap:14px; }
+  .mode-card.wide .name{flex-shrink:0}
+  @media (max-width:480px){ .mode-card.wide{flex-direction:column;align-items:flex-start;gap:6px} }
+  .home-extra { display:flex; gap:10px; justify-content:center; margin-top:4px; }
+  .home-extra .btn { font-size:14px; padding:10px 18px; }
+
+  /* ---------- 顶栏 ---------- */
+  .topbar { display:flex; align-items:center; justify-content:space-between; gap:8px;
+    padding:10px 14px; margin-bottom:12px; }
+  .topbar .stat { font-size:13px; font-weight:600; color:#555; background:#f4f4fb;
+    padding:6px 12px; border-radius:10px; white-space:nowrap; }
+  .topbar .stat b { color:#667eea; }
+  .topbar .stat.hearts b { color:#e74c3c; letter-spacing:2px; }
+  .quit-btn { background:#ffecec; color:#e74c3c; font-size:13px; font-weight:600;
+    padding:7px 14px; border-radius:10px; }
+
+  /* ---------- 答题区 ---------- */
+  #quizBody { flex:1; display:flex; flex-direction:column; gap:14px; min-height:0; }
+  .qcard { padding:24px 22px; flex:0 0 auto; }
+  .qtag { display:inline-block; font-size:12px; font-weight:700; color:#fff;
+    padding:3px 12px; border-radius:20px; margin-bottom:12px; }
+  .tag-symbol{background:#f0932b}.tag-valence{background:#6c5ce7}.tag-equation{background:#00b894}
+  .tag-mixed{background:#0984e3}.tag-review{background:#e84393}
+  .tag-definition{background:#e17055}
+  .qtext { font-size:19px; font-weight:600; line-height:1.65; color:#2d2d44; white-space:pre-wrap; }
+  .opts { display:flex; flex-direction:column; gap:11px; flex:1; justify-content:center; }
+  .opt {
+    background:#fff; border:2px solid #e8e8f4; border-radius:14px; padding:15px 20px;
+    font-size:17px; font-weight:600; color:#444; text-align:left;
+    transition:all .15s; display:flex; align-items:center; gap:12px;
+  }
+  .opt .key { width:26px; height:26px; border-radius:8px; background:#f0f1fa; color:#667eea;
+    display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800; flex-shrink:0; }
+  .opt:active { transform:scale(.97); }
+  .opt.correct { background:#e6f9ee; border-color:#00b894; color:#00875f; }
+  .opt.correct .key { background:#00b894; color:#fff; }
+  .opt.wrong { background:#ffecec; border-color:#e74c3c; color:#c0392b; }
+  .opt.wrong .key { background:#e74c3c; color:#fff; }
+  .opt.dim { opacity:.45; }
+
+  /* 反馈条 */
+  .feedback { border-radius:14px; padding:12px 16px; font-size:14px; line-height:1.6;
+    display:none; animation:slideUp .25s; }
+  @keyframes slideUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+  .feedback.show { display:block; }
+  .feedback.good { background:#e6f9ee; color:#00875f; border:1.5px solid #b5ebcd; }
+  .feedback.bad  { background:#fff3f3; color:#c0392b; border:1.5px solid #f5c6c6; }
+  .feedback .tip { color:#7a7a92; font-size:13px; }
+
+  .next-btn { align-self:flex-end; }
+
+  /* ---------- 翻牌游戏 ---------- */
+  #memoryBody { flex:1; display:flex; flex-direction:column; min-height:0; }
+  #memGrid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; flex:1;
+    align-content:center; perspective:1000px; }
+  .mem-card { aspect-ratio:3/3.4; cursor:pointer; position:relative; }
+  .mem-inner { position:absolute; inset:0; transform-style:preserve-3d; transition:transform .4s; }
+  .mem-card.flip .mem-inner { transform:rotateY(180deg); }
+  .mem-face { position:absolute; inset:0; border-radius:14px; display:flex; align-items:center;
+    justify-content:center; backface-visibility:hidden; -webkit-backface-visibility:hidden;
+    font-weight:800; box-shadow:0 4px 10px rgba(0,0,0,.15); }
+  .mem-back { background:linear-gradient(135deg,#5b8def,#9b59b6); color:#fff; font-size:26px; }
+  .mem-front { background:#fff; transform:rotateY(180deg); font-size:22px; color:#2d2d44;
+    flex-direction:column; gap:2px; padding:6px; text-align:center; }
+  .mem-front .sym { font-size:26px; color:#667eea; }
+  .mem-front .cname { font-size:16px; }
+  .mem-card.matched { z-index:5; }
+  .mem-card.matched .mem-inner {
+    transform:rotateY(180deg) scale(1.25);
+    transition:transform .3s cubic-bezier(.34,1.56,.64,1);
+  }
+  .mem-card.matched .mem-front {
+    border:2.5px solid #00b894;
+    box-shadow:0 0 22px rgba(0,184,148,.75), 0 6px 16px rgba(0,184,148,.4);
+    background:#eafff5;
+  }
+  /* 消除：清晰淡出缩小 */
+  .mem-card.gone .mem-inner {
+    transform:rotateY(180deg) scale(.45);
+    transition:transform .5s ease-in;
+  }
+  .mem-card.gone { transition:opacity .5s ease-in; opacity:0; }
+  .mem-card.removed { visibility:hidden; pointer-events:none; }
+
+  /* ---------- 结果页 ---------- */
+  #resultOverlay { position:absolute; inset:0; background:rgba(40,40,70,.55); backdrop-filter:blur(4px);
+    display:flex; align-items:center; justify-content:center; padding:24px; z-index:50; }
+  .result-card { width:100%; max-width:400px; padding:30px 26px; text-align:center; }
+  .result-card .emoji { font-size:52px; }
+  .result-card h2 { font-size:24px; margin:10px 0 4px; color:#2d2d44; }
+  .result-card .msg { font-size:14px; color:#8a8aa0; margin-bottom:16px; }
+  .result-stats { display:flex; justify-content:center; gap:18px; margin-bottom:18px; }
+  .result-stats .rs { background:#f4f4fb; border-radius:12px; padding:10px 16px; }
+  .result-stats .rs b { display:block; font-size:20px; color:#667eea; }
+  .result-stats .rs span { font-size:12px; color:#8a8aa0; }
+  .result-card .btn-row { display:flex; gap:10px; justify-content:center; }
+
+  /* ---------- 秘籍 ---------- */
+  #cheatOverlay { position:absolute; inset:0; background:rgba(40,40,70,.55); backdrop-filter:blur(4px);
+    z-index:60; display:flex; align-items:center; justify-content:center; padding:20px; }
+  .cheat-card { width:100%; max-width:620px; max-height:88%; overflow-y:auto; padding:24px; }
+  .cheat-card h2 { font-size:20px; margin-bottom:14px; color:#2d2d44; }
+  .cheat-sec { background:#f8f8fd; border-radius:14px; padding:14px 16px; margin-bottom:12px; }
+  .cheat-sec h3 { font-size:15px; color:#667eea; margin-bottom:8px; }
+  .cheat-sec p { font-size:14.5px; line-height:2; color:#444; white-space:pre-line; }
+  .cheat-sec .poem { font-size:15px; color:#2d2d44; font-weight:600; line-height:2.1; }
+
+  /* ---------- 错题本 ---------- */
+  #wrongList { flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:10px; margin-top:4px; }
+  .wrong-item { background:#fff; border-radius:14px; padding:14px 16px; font-size:14px;
+    box-shadow:0 3px 8px rgba(0,0,0,.08); }
+  .wrong-item .wq { font-weight:600; color:#2d2d44; line-height:1.6; }
+  .wrong-item .wa { color:#00b894; margin-top:6px; font-weight:600; }
+  .empty-tip { text-align:center; color:#cfcfe2; font-size:15px; padding:40px 0; }
+
+  /* 音效开关 */
+  #soundToggle { position:absolute; top:14px; right:14px; z-index:20; background:rgba(255,255,255,.25);
+    border-radius:10px; padding:6px 10px; font-size:16px; color:#fff; }
+
+  /* toast */
+  #toast { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%) scale(.9);
+    background:rgba(30,30,50,.88); color:#fff; font-size:38px; font-weight:800;
+    padding:16px 34px; border-radius:18px; opacity:0; pointer-events:none;
+    transition:all .2s; z-index:99; }
+  #toast.show { opacity:1; transform:translate(-50%,-50%) scale(1); }
+
+  @media (max-width:480px){
+    .title-wrap h1{font-size:26px}
+    .mode-grid{grid-template-columns:1fr 1fr}
+    .qtext{font-size:16.5px}
+    .opt{font-size:15px;padding:13px 15px}
+    .topbar .stat{font-size:11px;padding:5px 8px}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <button id="soundToggle" onclick="toggleSound()">🔊</button>
+
+  <!-- ========== 首页 ========== -->
+  <div class="screen" id="home">
+    <div class="title-wrap">
+      <div class="flask">⚗️</div>
+      <h1>初中化学记忆大挑战</h1>
+      <div class="sub">元素符号 · 化合价 · 方程式 · 实验　玩着玩着就记住啦</div>
+    </div>
+    <div class="mode-grid">
+      <button class="mode-card" onclick="startMemory()">
+        <span class="icon">🃏</span>
+        <span class="name">元素翻翻乐</span>
+        <span class="desc">翻牌配对，记住元素符号和中文名</span>
+        <span class="stars" id="starsMemory"></span>
+      </button>
+      <button class="mode-card" onclick="startMode('valence')">
+        <span class="icon">⚡</span>
+        <span class="name">化合价快问快答</span>
+        <span class="desc">60 秒限时挑战，练出条件反射</span>
+        <span class="stars" id="starsValence"></span>
+      </button>
+      <button class="mode-card" onclick="startMode('equation')">
+        <span class="icon">🧪</span>
+        <span class="name">方程式闯关</span>
+        <span class="desc">补全化学方程式，闯完就背下来了</span>
+        <span class="stars" id="starsEquation"></span>
+      </button>
+      <button class="mode-card" onclick="startMode('mixed')">
+        <span class="icon">🏆</span>
+        <span class="name">综合大闯关</span>
+        <span class="desc">符号·化合价·实验现象混合出题，3 条命</span>
+        <span class="stars" id="starsMixed"></span>
+      </button>
+      <button class="mode-card wide" onclick="startMode('definition')">
+        <span class="icon">📖</span>
+        <span class="name">定义填空 · 课本原句</span>
+        <span class="desc">课本定义挖空填词，背熟必考原话</span>
+        <span class="stars" id="starsDefinition"></span>
+      </button>
+    </div>
+    <div class="home-extra">
+      <button class="btn ghost" onclick="showCheat()">📜 背诵秘籍</button>
+      <button class="btn ghost" onclick="showWrong()">📖 错题本 <span id="wrongCount"></span></button>
+    </div>
+  </div>
+
+  <!-- ========== 答题页 ========== -->
+  <div class="screen hidden" id="quizScreen">
+    <div class="topbar card">
+      <div class="stat" id="stProgress">第 <b>1</b>/15 题</div>
+      <div class="stat">得分 <b id="stScore">0</b></div>
+      <div class="stat" id="stCombo">连击 <b>×0</b></div>
+      <div class="stat" id="stTime" style="display:none">⏱ <b>60</b>s</div>
+      <div class="stat hearts" id="stHearts" style="display:none">❤️❤️❤️</div>
+      <button class="quit-btn" onclick="showCheat()" style="background:#f0f1fa;color:#667eea">📜</button>
+      <button class="quit-btn" onclick="quitQuiz()">退出</button>
+    </div>
+    <div id="quizBody">
+      <div class="qcard card">
+        <span class="qtag" id="qTag">综合</span>
+        <div class="qtext" id="qText"></div>
+      </div>
+      <div class="opts" id="optsBox"></div>
+      <div class="feedback" id="fbBox"></div>
+      <button class="btn next-btn" id="nextBtn" onclick="nextQuestion()">下一题 →</button>
+    </div>
+  </div>
+
+  <!-- ========== 翻牌页 ========== -->
+  <div class="screen hidden" id="memoryScreen">
+    <div class="topbar card">
+      <div class="stat">步数 <b id="memMoves">0</b></div>
+      <div class="stat">配对 <b id="memPairs">0</b>/8</div>
+      <div class="stat">⏱ <b id="memTime">0</b>s</div>
+      <button class="quit-btn" onclick="endMemory(true)">退出</button>
+    </div>
+    <div id="memoryBody"><div id="memGrid"></div></div>
+    <div class="feedback good" id="memDone" style="display:none"></div>
+  </div>
+
+  <!-- ========== 结果 ========== -->
+  <div id="resultOverlay" style="display:none">
+    <div class="result-card card">
+      <div class="emoji" id="rEmoji">🎉</div>
+      <h2 id="rTitle">太棒了！</h2>
+      <div class="msg" id="rMsg"></div>
+      <div class="result-stats">
+        <div class="rs"><b id="rScore">0</b><span>得分</span></div>
+        <div class="rs"><b id="rAcc">0%</b><span>正确率</span></div>
+        <div class="rs"><b id="rBest">0</b><span>最佳连击</span></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn ghost" onclick="closeResult()">返回首页</button>
+        <button class="btn" onclick="replay()">再来一次 🔁</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 秘籍 ========== -->
+  <div id="cheatOverlay" style="display:none" onclick="if(event.target===this)hide('cheatOverlay')">
+    <div class="cheat-card card">
+      <h2>📜 初中化学背诵秘籍 · 口诀大合集</h2>
+      <div class="cheat-sec">
+        <h3>① 元素符号口诀（前 20 号，跟我念）</h3>
+        <p class="poem">氢氦锂铍硼，碳氮氧氟氖，
+钠镁铝硅磷，硫氯氩钾钙。
+（H He Li Be B　C N O F Ne　Na Mg Al Si P　S Cl Ar K Ca）
+谐音记忆：「氢害离皮朋，炭淡氧服奶，钠镁吕硅临，流绿亚钾盖」</p>
+      </div>
+      <div class="cheat-sec">
+        <h3>② 化合价口诀（必背指数 ★★★★★）</h3>
+        <p class="poem">一价钾钠氯氢银，二价氧钙钡镁锌，
+三铝四硅五价磷，二三铁、二四碳，
+二四六硫都齐全，铜汞二价最常见。
+原子团：负一氢氧硝酸根，负二硫酸碳酸根，正一价的是铵根。</p>
+      </div>
+      <div class="cheat-sec">
+        <h3>③ 金属活动性顺序（考试年年考）</h3>
+        <p class="poem">钾钙钠镁铝、锌铁锡铅（氢）、铜汞银铂金
+K Ca Na Mg Al　Zn Fe Sn Pb (H)　Cu Hg Ag Pt Au
+谐音记忆：「嫁给那美女，新铁喜欢前（氢），统共一百斤」
+规则：越靠前越活泼；氢前金属置换酸中氢；前金换后金（盐溶液中）。</p>
+      </div>
+      <div class="cheat-sec">
+        <h3>④ 盐的溶解性口诀</h3>
+        <p class="poem">钾钠铵盐硝酸盐，完全溶解不困难；
+盐酸不溶银亚汞，硫酸不溶钡和铅；
+碳酸盐中钾钠铵溶，其余大多不溶水。</p>
+      </div>
+      <div class="cheat-sec">
+        <h3>⑤ 常见沉淀颜色口诀</h3>
+        <p class="poem">白沉五虎记心间：碳酸钡钙银亚汞，硫酸钡镁氢氧化镁；
+蓝色沉淀氢氧化铜，红褐沉淀氢氧化铁。
+（CaCO₃、BaCO₃、AgCl、BaSO₄ 白色；Cu(OH)₂ 蓝色；Fe(OH)₃ 红褐色；
+注：BaSO₄、AgCl 不溶于稀硝酸，CaCO₃、BaCO₃ 溶于稀硝酸并冒气泡）</p>
+      </div>
+      <div class="cheat-sec">
+        <h3>⑥ 酸碱指示剂口诀</h3>
+        <p class="poem">石蕊：遇酸变红，遇碱变蓝（酸红碱蓝）
+酚酞：遇酸不变色，遇碱变红（酸无碱红）
+pH：小于 7 酸性，等于 7 中性，大于 7 碱性。</p>
+      </div>
+      <div class="cheat-sec">
+        <h3>⑦ 电解水口诀</h3>
+        <p class="poem">父亲前负氢正氧，氢二氧一体积比。
+（正极氧气、负极氢气，体积比氢:氧 = 2:1）
+证明水由氢元素和氧元素组成。</p>
+      </div>
+      <div class="cheat-sec">
+        <h3>⑧ 过滤操作口诀「一贴二低三靠」</h3>
+        <p class="poem">一贴：滤纸紧贴漏斗内壁（中间不留气泡）
+二低：滤纸边缘低于漏斗边缘；液面低于滤纸边缘
+三靠：烧杯靠玻璃棒、玻璃棒靠三层滤纸一边、漏斗下端靠烧杯内壁</p>
+      </div>
+      <div class="cheat-sec">
+        <h3>⑨ 实验室制氧气步骤口诀</h3>
+        <p class="poem">「查装定点收移熄」——谐音「茶庄定点收利息」
+查：检查气密性　装：装药品　定：固定试管
+点：点燃酒精灯　收：收集气体　移：移出导管　熄：熄灭酒精灯
+（注意：先移导管再熄灯，防止水倒吸炸裂试管）</p>
+      </div>
+      <div class="cheat-sec">
+        <h3>⑩ 仪器操作口诀</h3>
+        <p class="poem">托盘天平：左物右码，先大后小（游码从左往右读）
+量筒读数：视线与凹液面最低处保持水平（俯视偏大、仰视偏小）
+倾倒液体：瓶塞倒放，标签向手心
+给试管加热：先预热，再集中加热；液体不超过试管容积 1/3</p>
+      </div>
+      <div class="cheat-sec">
+        <h3>⑪ 化学方程式书写四步口诀</h3>
+        <p class="poem">「左写反应物，右写生成物；写对化学式，再来配系数；
+注明条件符号，最后画等号；气体升箭头，沉淀往下掉。」
+步骤记忆：写 → 配 → 注 → 等
+气体符号 ↑：生成物是气体且反应物无气体时标；沉淀符号 ↓：溶液中生成不溶物时标。</p>
+      </div>
+      <div class="cheat-sec">
+        <h3>⑫ 燃烧与灭火口诀</h3>
+        <p class="poem">燃烧三条件缺一不可：可燃物 + 氧气 + 温度达着火点
+灭火三招只需其一：清除可燃物、隔绝氧气、降温到着火点以下。</p>
+      </div>
+      <div class="cheat-sec">
+        <h3>⑬ 实验现象速记</h3>
+        <p>铁丝在 O₂ 中燃烧：火星四射，生成黑色固体（Fe₃O₄）
+硫在 O₂ 中燃烧：明亮的蓝紫色火焰（空气中是淡蓝色）
+氢气燃烧：淡蓝色火焰；镁条燃烧：耀眼白光
+CO₂ 通入澄清石灰水：变浑浊（生成 CaCO₃ 沉淀）
+木炭在 O₂ 中燃烧：发出白光、放热
+铁钉放入硫酸铜溶液：铁钉表面覆盖红色物质，溶液由蓝色变浅绿色</p>
+      </div>
+      <div class="cheat-sec">
+        <h3>⑭ 核心定义速记（课本原话）</h3>
+        <p>化学变化：有新物质生成（本质特征）
+分子：保持物质化学性质的最小粒子
+原子：化学变化中的最小粒子
+元素：质子数（核电荷数）相同的一类原子总称
+单质：同种元素组成的纯净物；化合物：不同种元素组成的纯净物
+氧化物：两种元素组成、其中一种是氧元素
+质量守恒：参加反应的各物质质量总和 = 生成物质量总和
+酸 → 阳离子全部是 H⁺；碱 → 阴离子全部是 OH⁻
+中和反应：酸 + 碱 → 盐 + 水
+燃烧三条件：可燃物、接触氧气、达到着火点</p>
+      </div>
+      <div class="cheat-sec">
+        <h3>⑮ 常见相对分子质量</h3>
+        <p>H₂O=18　CO₂=44　O₂=32　H₂=2　CO=28　
+CaCO₃=100　NaCl=58.5　Na₂CO₃=106　CaO=56　Ca(OH)₂=74</p>
+      </div>
+      <button class="btn" style="width:100%;margin-top:4px" onclick="hide('cheatOverlay')">我背会了！</button>
+    </div>
+  </div>
+
+  <!-- ========== 错题本 ========== -->
+  <div class="screen hidden" id="wrongScreen">
+    <div class="topbar card">
+      <div class="stat">📖 错题本（<b id="wTotal">0</b>）</div>
+      <button class="quit-btn" onclick="hide('wrongScreen');show('home')">返回首页</button>
+    </div>
+    <div style="display:flex;gap:10px;margin-bottom:10px">
+      <button class="btn" style="flex:1" onclick="startReview()">🎯 复习错题</button>
+      <button class="btn ghost" onclick="clearWrong()">清空</button>
+    </div>
+    <div id="wrongList"></div>
+  </div>
+
+  <div id="toast"></div>
+</div>
+
+<script>
+/* ================= 数据 ================= */
+const ELEMENTS = [["H","氢"],["He","氦"],["Li","锂"],["Be","铍"],["B","硼"],["C","碳"],["N","氮"],["O","氧"],["F","氟"],["Ne","氖"],["Na","钠"],["Mg","镁"],["Al","铝"],["Si","硅"],["P","磷"],["S","硫"],["Cl","氯"],["Ar","氩"],["K","钾"],["Ca","钙"],["Mn","锰"],["Fe","铁"],["Cu","铜"],["Zn","锌"],["Ag","银"],["I","碘"],["Ba","钡"],["Pt","铂"],["Au","金"],["Hg","汞"]];
+
+const VALENCES = [
+ ["K","钾","+1"],["Na","钠","+1"],["Ag","银","+1"],["H","氢","+1"],
+ ["Ca","钙","+2"],["Mg","镁","+2"],["Ba","钡","+2"],["Zn","锌","+2"],
+ ["O","氧","-2"],["Cl","氯","-1"],["Al","铝","+3"],["Si","硅","+4"],
+ ["P","磷","+5"],["Fe","铁","+2/+3"],["C","碳","+2/+4"],["S","硫","-2/+4/+6"],
+ ["Cu","铜","+2"],["Mn","锰","+2/+4"],
+ ["OH⁻","氢氧根","-1"],["NO₃⁻","硝酸根","-1"],["SO₄²⁻","硫酸根","-2"],["CO₃²⁻","碳酸根","-2"],["NH₄⁺","铵根","+1"]
+];
+
+const EQUATIONS = [
+ {q:"镁条在氧气中燃烧：2Mg + O₂ —点燃→ ____", a:"2MgO", opts:["2MgO","MgO₂","2MgO₂","Mg₂O"]},
+ {q:"铁丝在氧气中燃烧：3Fe + 2O₂ —点燃→ ____", a:"Fe₃O₄", opts:["Fe₃O₄","Fe₂O₃","FeO","FeO₂"]},
+ {q:"碳充分燃烧：C + O₂ —点燃→ ____", a:"CO₂", opts:["CO₂","CO","C₂O","CO₃"]},
+ {q:"硫在氧气中燃烧：S + O₂ —点燃→ ____", a:"SO₂", opts:["SO₂","SO₃","S₂O","SO"]},
+ {q:"红磷在氧气中燃烧：4P + 5O₂ —点燃→ ____", a:"2P₂O₅", opts:["2P₂O₅","P₂O₅","2PO₅","P₅O₂"]},
+ {q:"氢气在氧气中燃烧：2H₂ + O₂ —点燃→ ____", a:"2H₂O", opts:["2H₂O","H₂O₂","2H₂O₂","H₃O"]},
+ {q:"过氧化氢在二氧化锰催化下分解：2H₂O₂ —MnO₂→ 2H₂O + ____", a:"O₂↑", opts:["O₂↑","H₂↑","O₃","H₂O₂"]},
+ {q:"电解水：2H₂O —通电→ 2H₂↑ + ____", a:"O₂↑", opts:["O₂↑","2O₂↑","H₂O₂","O₃↑"]},
+ {q:"二氧化碳溶于水：CO₂ + H₂O → ____", a:"H₂CO₃", opts:["H₂CO₃","H₂O₂","CO₃H₂","HCO₃"]},
+ {q:"碳酸不稳定分解：H₂CO₃ → H₂O + ____", a:"CO₂↑", opts:["CO₂↑","CO↑","C↑","O₂↑"]},
+ {q:"高温煅烧石灰石：CaCO₃ —高温→ CaO + ____", a:"CO₂↑", opts:["CO₂↑","CO↑","CaCO₃","O₂↑"]},
+ {q:"实验室制二氧化碳：CaCO₃ + 2HCl → CaCl₂ + H₂O + ____", a:"CO₂↑", opts:["CO₂↑","H₂↑","CO↑","O₂↑"]},
+ {q:"铁钉浸入硫酸铜溶液：Fe + CuSO₄ → ____ + Cu", a:"FeSO₄", opts:["FeSO₄","Fe₂(SO₄)₃","Fe(OH)₂","FeCl₂"]},
+ {q:"锌与稀硫酸反应（实验室制氢气）：Zn + H₂SO₄ → ZnSO₄ + ____", a:"H₂↑", opts:["H₂↑","O₂↑","CO₂↑","H₂O"]},
+ {q:"生石灰遇水：CaO + H₂O → ____", a:"Ca(OH)₂", opts:["Ca(OH)₂","CaCO₃","CaH₂","CaO₂"]},
+ {q:"检验二氧化碳：CO₂ + Ca(OH)₂ → CaCO₃↓ + ____", a:"H₂O", opts:["H₂O","H₂O₂","H₂CO₃","O₂"]},
+ {q:"盐酸与氢氧化钠中和：HCl + NaOH → NaCl + ____", a:"H₂O", opts:["H₂O","H₂","NaOH₂","NaH"]},
+ {q:"氢氧化钠吸收二氧化碳：2NaOH + CO₂ → ____ + H₂O", a:"Na₂CO₃", opts:["Na₂CO₃","NaHCO₃","NaCO₃","Na₂O"]},
+ {q:"一氧化碳还原氧化铁（炼铁）：3CO + Fe₂O₃ —高温→ 2Fe + ____", a:"3CO₂", opts:["3CO₂","3CO₃","2CO₂","CO₂"]},
+ {q:"木炭还原氧化铜：C + 2CuO —高温→ 2Cu + ____", a:"CO₂↑", opts:["CO₂↑","CO↑","CuO₂","C₂O"]}
+];
+
+const DEFS = [
+ {q:"没有生成【____】的变化叫做物理变化。", a:"新物质", opts:["新物质","能量","沉淀","气体"]},
+ {q:"生成【____】的变化叫做化学变化（又叫化学反应）。", a:"新物质", opts:["新物质","热量","光","烟"]},
+ {q:"化学变化的本质特征是有【____】生成。", a:"新物质", opts:["新物质","发光发热现象","颜色变化","状态变化"]},
+ {q:"空气的成分按体积分数计算：氮气约占【____】。", a:"78%", opts:["78%","21%","0.94%","0.03%"]},
+ {q:"空气的成分按体积分数计算：氧气约占【____】。", a:"21%", opts:["21%","78%","50%","30%"]},
+ {q:"催化剂能改变其他物质的化学反应速率，而本身的【____】和化学性质在反应前后都没有发生变化。", a:"质量", opts:["质量","形状","状态","颜色"]},
+ {q:"纯净物是由【____】种物质组成的。", a:"一", opts:["一","两","三","许多"]},
+ {q:"混合物是由两种或【____】物质混合而成的。", a:"两种以上", opts:["两种以上","一种","三种固定","同种原子"]},
+ {q:"由同种（一种）元素组成的【____】叫单质。", a:"纯净物", opts:["纯净物","混合物","化合物","溶液"]},
+ {q:"由【____】元素组成的纯净物叫化合物。", a:"不同种", opts:["不同种","同种","两种金属","一种金属"]},
+ {q:"由两种元素组成，其中一种是【____】元素的化合物叫氧化物。", a:"氧", opts:["氧","氢","碳","金属"]},
+ {q:"分子是保持物质【____】性质的最小粒子。", a:"化学", opts:["化学","物理","力学","热学"]},
+ {q:"原子是化学变化中的【____】粒子。", a:"最小", opts:["最小","最大","主要","唯一"]},
+ {q:"元素是具有相同【____】（即核电荷数）的一类原子的总称。", a:"质子数", opts:["质子数","中子数","电子层数","相对原子质量"]},
+ {q:"相对原子质量 ≈ 质子数 + 【____】。", a:"中子数", opts:["中子数","电子数","质子数×2","原子序数"]},
+ {q:"化合物中各元素正负化合价的代数和为【____】。", a:"0（零）", opts:["0（零）","+1","-1","2"]},
+ {q:"质量守恒定律：参加化学反应的各物质的【____】总和，等于反应后生成的各物质的质量总和。", a:"质量", opts:["质量","体积","分子个数","能量"]},
+ {q:"溶液是【____】、稳定的混合物。", a:"均一", opts:["均一","浑浊","分层","无色"]},
+ {q:"酸：解离出的阳离子全部是【____】的化合物。", a:"氢离子（H⁺）", opts:["氢离子（H⁺）","钠离子","金属离子","铵根离子"]},
+ {q:"碱：解离出的阴离子全部是【____】的化合物。", a:"氢氧根离子（OH⁻）", opts:["氢氧根离子（OH⁻）","氯离子","碳酸根离子","硫酸根离子"]},
+ {q:"盐：由【____】（或铵根离子）和酸根离子构成的化合物。", a:"金属离子", opts:["金属离子","氢离子","氧离子","电子"]},
+ {q:"酸与碱作用生成【____】和水的反应，叫做中和反应。", a:"盐", opts:["盐","气体","沉淀","氧化物"]},
+ {q:"溶液 pH < 7 呈酸性，pH = 7 呈中性，pH > 7 呈【____】。", a:"碱性", opts:["碱性","酸性","中性","两性"]},
+ {q:"金属活动性顺序中，排在氢【____】的金属能置换出稀盐酸、稀硫酸中的氢。", a:"前面", opts:["前面","后面","任意位置","正中间"]},
+ {q:"二氧化碳不能燃烧，也【____】支持燃烧。", a:"不能", opts:["不能","能","大量","有时能"]},
+ {q:"燃烧需要三个条件：可燃物、与氧气（或空气）接触、温度达到可燃物的【____】。", a:"着火点", opts:["着火点","沸点","熔点","100℃"]},
+ {q:"灭火的原理：清除可燃物、隔绝氧气、降温到可燃物的【____】以下。", a:"着火点", opts:["着火点","熔点","室温","冰点"]},
+ {q:"化学反应中伴随着能量变化，通常表现为【____】的变化。", a:"热量", opts:["热量","质量","体积","颜色"]},
+ {q:"甲烷（CH₄）是【____】的有机化合物。", a:"最简单", opts:["最简单","最复杂","相对分子质量最大","唯一"]},
+ {q:"煤、石油、【____】是三大化石燃料。", a:"天然气", opts:["天然气","酒精","氢气","木炭"]},
+ {q:"原子团【____】在化学反应前后作为一个整体参加反应，像一个原子一样。", a:"（如 SO₄²⁻）", opts:["（如 SO₄²⁻）","一定分解","不能存在","都带正电"]},
+ {q:"电解水实验中“正氧负氢”，说明水是由【____】组成的。", a:"氢元素和氧元素", opts:["氢元素和氧元素","氢气和氧气","水分子","氢原子和氧分子"]}
+];
+
+const MIXED = [
+ {q:"金属活动性最强的金属是？", opts:["钾 K","铁 Fe","铜 Cu","金 Au"], a:"钾 K"},
+ {q:"下列金属中，不能与稀盐酸反应放出氢气的是？", opts:["锌 Zn","铁 Fe","铜 Cu","镁 Mg"], a:"铜 Cu"},
+ {q:"地壳中含量最多的元素是？", opts:["氧 O","硅 Si","铝 Al","铁 Fe"], a:"氧 O"},
+ {q:"空气中体积分数最大的气体是？", opts:["氮气 N₂","氧气 O₂","二氧化碳 CO₂","稀有气体"], a:"氮气 N₂"},
+ {q:"“2H₂O” 表示？", opts:["2 个水分子","2 个氢原子和 1 个氧原子","2 个氢气","4 个氢原子"], a:"2 个水分子"},
+ {q:"铁丝在氧气中燃烧的现象是？", opts:["火星四射，生成黑色固体","发出蓝紫色火焰","发出耀眼白光","生成红色固体"], a:"火星四射，生成黑色固体"},
+ {q:"硫在氧气中燃烧的现象是？", opts:["明亮的蓝紫色火焰","淡蓝色火焰","火星四射","白烟"], a:"明亮的蓝紫色火焰"},
+ {q:"镁条燃烧发出？", opts:["耀眼白光","蓝紫色火焰","淡蓝色火焰","黄色火焰"], a:"耀眼白光"},
+ {q:"CO₂ 通入澄清石灰水，现象是？", opts:["石灰水变浑浊","石灰水变红","产生气泡","无现象"], a:"石灰水变浑浊"},
+ {q:"电解水时，正极产生的是？", opts:["氧气","氢气","二氧化碳","氮气"], a:"氧气"},
+ {q:"电解水生成氢气和氧气的体积比是？", opts:["2:1","1:2","1:1","2:3"], a:"2:1"},
+ {q:"水的相对分子质量是？", opts:["18","16","20","22"], a:"18"},
+ {q:"CO₂ 的相对分子质量是？", opts:["44","28","32","46"], a:"44"},
+ {q:"下列属于氧化物的是？", opts:["H₂O","O₂","NaOH","HCl"], a:"H₂O"},
+ {q:"空气属于？", opts:["混合物","纯净物","单质","化合物"], a:"混合物"},
+ {q:"原子序数 = 原子核内的？", opts:["质子数","中子数","电子层数","相对分子质量"], a:"质子数"},
+ {q:"铁的元素符号是？", opts:["Fe","F","Cu","Fr"], a:"Fe"},
+ {q:"钠的元素符号是？", opts:["Na","N","K","Nb"], a:"Na"},
+ {q:"复分解反应发生的条件是生成物中有？", opts:["沉淀、气体或水","只有盐","必须有金属","只有气体"], a:"沉淀、气体或水"},
+ {q:"“钾钙钠镁铝”后面紧接着的三种金属是？", opts:["锌铁锡","铜汞银","铅氢铜","铁铜锌"], a:"锌铁锡"},
+ {q:"NO₃⁻（硝酸根）中氮元素的化合价是？", opts:["+5","+3","-3","+2"], a:"+5"},
+ {q:"能检验 CO₂ 的化学反应是（方程式）？", opts:["CO₂+Ca(OH)₂→CaCO₃↓+H₂O","CO₂+H₂O→H₂CO₃","C+CO₂→2CO","CO₂+C→2CO"], a:"CO₂+Ca(OH)₂→CaCO₃↓+H₂O"},
+ {q:"pH < 7 的溶液呈？", opts:["酸性","碱性","中性","无法判断"], a:"酸性"},
+ {q:"实验室制氧气（过氧化氢法）加入二氧化锰是作？", opts:["催化剂","反应物","干燥剂","溶剂"], a:"催化剂"},
+ {q:"相对原子质量约为 23 的元素是？", opts:["钠 Na","钾 K","钙 Ca","镁 Mg"], a:"钠 Na"},
+ {q:"一氧化碳还原氧化铁的产物是？", opts:["铁和二氧化碳","铁和一氧化碳","氧化亚铁和碳","铁和氧气"], a:"铁和二氧化碳"},
+ {q:"化学变化中，最小（不变）的微粒是？", opts:["原子","分子","电子","原子核外的电子"], a:"原子"},
+ {q:"下列气体能使澄清石灰水变浑浊的是？", opts:["CO₂","O₂","H₂","N₂"], a:"CO₂"},
+ {q:"分子和原子的本质区别是？", opts:["化学变化中分子可分、原子不可分","大小不同","质量不同","运动速度不同"], a:"化学变化中分子可分、原子不可分"},
+ {q:"氢气在空气中燃烧的火焰颜色是？", opts:["淡蓝色","蓝紫色","黄色","红色"], a:"淡蓝色"}
+];
+
+/* ================= 状态 ================= */
+let S = { mode:"", list:[], idx:0, score:0, combo:0, bestCombo:0, correct:0, answered:0,
+  hearts:3, timer:null, timeLeft:60, review:false, lastResult:null };
+let soundOn = true;
+const $ = id => document.getElementById(id);
+const shuffle = a => a.map(v=>[Math.random(),v]).sort((x,y)=>x[0]-y[0]).map(v=>v[1]);
+const show = id => $(id).classList.remove("hidden");
+const hide = id => $(id).classList.add("hidden");
+
+/* ================= 音效 ================= */
+let AC=null;
+function beep(freqs, dur=0.12, type="sine"){
+  if(!soundOn) return;
+  try{
+    AC = AC || new (window.AudioContext||window.webkitAudioContext)();
+    freqs.forEach((f,i)=>{
+      const o=AC.createOscillator(), g=AC.createGain();
+      o.type=type; o.frequency.value=f;
+      g.gain.setValueAtTime(0.12, AC.currentTime+i*dur);
+      g.gain.exponentialRampToValueAtTime(0.001, AC.currentTime+i*dur+dur);
+      o.connect(g); g.connect(AC.destination);
+      o.start(AC.currentTime+i*dur); o.stop(AC.currentTime+i*dur+dur);
+    });
+  }catch(e){}
+}
+const sOk  = ()=>beep([523,784],0.1);
+const sGood= ()=>beep([523,659,784,1046],0.09);
+const sBad = ()=>beep([220,160],0.15,"square");
+function toggleSound(){ soundOn=!soundOn; $("soundToggle").textContent = soundOn?"🔊":"🔇"; }
+
+/* ================= 星级存储 ================= */
+const store = {
+  get(k,d){ try{ return JSON.parse(localStorage.getItem(k)) ?? d; }catch(e){ return d; } },
+  set(k,v){ localStorage.setItem(k, JSON.stringify(v)); }
+};
+function refreshHome(){
+  ["Memory","valence","equation","mixed","definition"].forEach(m=>{
+    const best = store.get("chem_best_"+m, 0);
+    const el = $("stars"+ (m==="Memory"?"Memory":m.charAt(0).toUpperCase()+m.slice(1)));
+    if(el) el.textContent = best>0 ? "🏆 最佳 " + best : "";
+  });
+  const n = store.get("chem_wrong", []).length;
+  $("wrongCount").textContent = n ? "("+n+")" : "";
+}
+window.addEventListener("load", refreshHome);
+
+/* ================= 答题模式 ================= */
+function buildValenceQuestions(n){
+  const pool = shuffle(VALENCES).slice(0,n);
+  return pool.map(([sym,name,val])=>{
+    const distractors = shuffle(["+1","+2","+3","-1","-2","+4","+5","-3"]).filter(v=>!val.split("/").includes(v)).slice(0,3);
+    return { tag:"化合价", q:`${name}（${sym}）常见的化合价是？`, opts:shuffle([val,...distractors]), a:val,
+      tip:`口诀记一记：一价钾钠氯氢银，二价氧钙钡镁锌……` };
+  });
+}
+function buildEquationQuestions(n){
+  return shuffle(EQUATIONS).slice(0,n).map(e=>({
+    tag:"方程式", q:e.q, opts:shuffle(e.opts), a:e.a,
+    tip:"多写几遍方程式，注意配平和气体符号 ↑！"
+  }));
+}
+function buildDefinitionQuestions(n){
+  return shuffle(DEFS).slice(0,n).map(e=>({
+    tag:"定义填空", q:e.q, opts:shuffle(e.opts), a:e.a,
+    tip:"课本原句挖空——多填几遍就刻在脑子里啦！"
+  }));
+}
+function buildMixedQuestions(n){
+  return shuffle(MIXED).slice(0,n).map(e=>({
+    tag:"综合", q:e.q, opts:shuffle(e.opts), a:e.a, tip:""
+  }));
+}
+function buildReviewQuestions(){
+  return store.get("chem_wrong",[]).map(w=>({tag:"错题回顾", q:w.q, opts:shuffle(w.opts.concat([w.a]).filter((v,i,arr)=>arr.indexOf(v)===i)), a:w.a, tip:"这次一定要记住它！"}));
+}
+
+function startMode(mode){
+  S.mode = mode; S.review=false;
+  S.list = mode==="valence" ? buildValenceQuestions(12)
+         : mode==="equation" ? buildEquationQuestions(12)
+         : mode==="definition" ? buildDefinitionQuestions(12)
+         : buildMixedQuestions(15);
+  S.hearts = mode==="mixed" ? 3 : 99;
+  S.timeLeft = mode==="valence" ? 60 : 0;
+  beginQuiz();
+}
+function startReview(){
+  const w = buildReviewQuestions();
+  if(!w.length){ toast("错题本是空的，真棒！✨"); return; }
+  S.mode="review"; S.review=true; S.list=w; S.hearts=99; S.timeLeft=0;
+  hide("wrongScreen"); beginQuiz();
+}
+
+function beginQuiz(){
+  S.idx=0; S.score=0; S.combo=0; S.bestCombo=0; S.correct=0; S.answered=0;
+  hide("home"); hide("resultOverlay"); hide("wrongScreen"); show("quizScreen");
+  $("stTime").style.display = S.timeLeft? "" : "none";
+  $("stHearts").style.display = S.hearts<90 ? "" : "none";
+  renderHearts();
+  if(S.timeLeft){
+    clearInterval(S.timer);
+    S.timer = setInterval(()=>{
+      S.timeLeft--; $("stTime").innerHTML = "⏱ <b>"+S.timeLeft+"</b>s";
+      if(S.timeLeft<=0){ clearInterval(S.timer); endQuiz("时间到！"); }
+    },1000);
+    $("stTime").innerHTML = "⏱ <b>"+S.timeLeft+"</b>s";
+  }
+  renderQuestion();
+}
+
+function renderHearts(){
+  $("stHearts").innerHTML = "❤️".repeat(Math.max(0,S.hearts)) + "🖤".repeat(Math.max(0,3-S.hearts));
+}
+
+function renderQuestion(){
+  const item = S.list[S.idx];
+  $("stProgress").innerHTML = `第 <b>${S.idx+1}</b>/${S.list.length} 题`;
+  $("stScore").textContent = S.score;
+  $("stCombo").innerHTML = `连击 <b>×${S.combo}</b>`;
+  const tagColors = {"化合价":"tag-valence","方程式":"tag-equation","综合":"tag-mixed","错题回顾":"tag-review","元素符号":"tag-symbol","定义填空":"tag-definition"};
+  $("qTag").textContent = item.tag;
+  $("qTag").className = "qtag " + (tagColors[item.tag]||"tag-mixed");
+  $("qText").textContent = item.q;
+  $("fbBox").className="feedback"; $("fbBox").innerHTML="";
+  $("nextBtn").style.visibility="hidden";
+  const box = $("optsBox"); box.innerHTML="";
+  item.opts.forEach((o,i)=>{
+    const b = document.createElement("button");
+    b.className="opt";
+    b.innerHTML = `<span class="key">${"ABCD"[i]}</span><span>${o}</span>`;
+    b.onclick = ()=>pick(b,o,item);
+    box.appendChild(b);
+  });
+}
+
+function pick(btn, chosen, item){
+  const opts = [...$("optsBox").children];
+  if(opts.some(b=>b.disabled)) return;
+  opts.forEach(b=>b.disabled=true);
+  S.answered++;
+  const ok = chosen===item.a;
+  if(ok){
+    S.combo++; S.bestCombo=Math.max(S.bestCombo,S.combo); S.correct++; S.score += 10 + (S.combo-1)*5;
+    btn.classList.add("correct");
+    $("fbBox").className="feedback good show";
+    $("fbBox").innerHTML = `✅ 正确！${S.combo>1?`<b>连击 ×${S.combo}，额外 +${(S.combo-1)*5} 分！</b>`:""}${item.tip?`<div class="tip">💡 ${item.tip}</div>`:""}`;
+    S.combo>=3 ? sGood() : sOk();
+  }else{
+    S.combo=0;
+    btn.classList.add("wrong");
+    opts.forEach(b=>{ if(b.textContent.includes(item.a)) b.classList.add("correct"); });
+    $("fbBox").className="feedback bad show";
+    $("fbBox").innerHTML = `❌ 正确答案：<b>${item.a}</b>${item.tip?`<div class="tip">💡 ${item.tip}</div>`:""}`;
+    addWrong(item);
+    sBad();
+    if(S.hearts<90){ S.hearts--; renderHearts(); }
+  }
+  $("stScore").textContent = S.score;
+  $("stCombo").innerHTML = `连击 <b>×${S.combo}</b>`;
+  $("nextBtn").style.visibility="visible";
+  if(S.hearts<=0){ setTimeout(()=>endQuiz("生命值用完了！"),900); $("nextBtn").style.visibility="hidden"; }
+}
+
+function nextQuestion(){
+  S.idx++;
+  if(S.idx>=S.list.length) endQuiz("闯关完成！");
+  else renderQuestion();
+}
+
+function endQuiz(reason){
+  clearInterval(S.timer);
+  hide("quizScreen");
+  const acc = S.answered? Math.round(S.correct/S.answered*100):0;
+  const key = "chem_best_"+(S.review?"review":S.mode);
+  const best = store.get(key,0);
+  if(S.score>best) store.set(key,S.score);
+  $("rEmoji").textContent = acc>=90?"🏆":acc>=70?"🎉":acc>=50?"💪":"📚";
+  $("rTitle").textContent = acc>=90?"太厉害了！":acc>=70?"表现不错！":acc>=50?"继续加油！":"多练几次就记住了";
+  $("rMsg").textContent = reason + "（错题已自动收入错题本）";
+  $("rScore").textContent = S.score;
+  $("rAcc").textContent = acc+"%";
+  $("rBest").textContent = "×"+S.bestCombo;
+  S.lastResult = S.review? "review" : S.mode;
+  show("resultOverlay");
+  refreshHome();
+  if(acc>=70) sGood();
+}
+
+function quitQuiz(){ clearInterval(S.timer); hide("quizScreen"); show("home"); refreshHome(); }
+function replay(){ hide("resultOverlay");
+  if(S.lastResult==="review") startReview();
+  else if(S.lastResult==="memory") startMemory();
+  else startMode(S.lastResult); }
+function closeResult(){ hide("resultOverlay"); show("home"); refreshHome(); }
+
+/* ================= 翻牌记忆 ================= */
+let mem = { first:null, moves:0, pairs:0, lock:false, timer:null, sec:0 };
+function startMemory(){
+  hide("home"); show("memoryScreen");
+  $("memDone").style.display="none";
+  mem.first=null; mem.moves=0; mem.pairs=0; mem.lock=false; mem.sec=0;
+  $("memMoves").textContent=0; $("memPairs").textContent=0; $("memTime").textContent=0;
+  clearInterval(mem.timer);
+  mem.timer=setInterval(()=>{ mem.sec++; $("memTime").textContent=mem.sec; },1000);
+  const chosen = shuffle(ELEMENTS).slice(0,8);
+  const cards = shuffle(chosen.flatMap(([sym,name])=>[{type:"sym",sym,name},{type:"name",sym,name}]));
+  const grid = $("memGrid"); grid.innerHTML="";
+  cards.forEach(c=>{
+    const el=document.createElement("div");
+    el.className="mem-card";
+    el.innerHTML=`<div class="mem-inner">
+      <div class="mem-face mem-back">⚗️</div>
+      <div class="mem-face mem-front">${c.type==="sym"
+        ? `<div class="sym">${c.sym}</div><div class="cname">元素</div>`
+        : `<div class="sym">${c.name}</div><div class="cname">元素</div>`}</div>
+    </div>`;
+    el._c=c;
+    el.onclick=()=>flip(el);
+    grid.appendChild(el);
+  });
+}
+function flip(el){
+  if(mem.lock || el.classList.contains("flip")) return;
+  el.classList.add("flip");
+  beep([400],0.06,"triangle");
+  if(!mem.first){ mem.first=el; return; }
+  mem.moves++; $("memMoves").textContent=mem.moves;
+  const a=mem.first, b=el;
+  if(a._c.sym===b._c.sym && a!==b){
+    mem.pairs++; $("memPairs").textContent=mem.pairs;
+    // 配对成功：先放大展示，再清晰淡出消失
+    a.classList.add("matched"); b.classList.add("matched");
+    sOk();
+    setTimeout(()=>{
+      a.classList.add("gone"); b.classList.add("gone");
+    },750);
+    setTimeout(()=>{
+      a.classList.add("removed"); b.classList.add("removed");
+    },1300);
+    mem.first=null;
+    if(mem.pairs===8) setTimeout(finishMemory,1500);
+  }else{
+    mem.lock=true;
+    setTimeout(()=>{ a.classList.remove("flip"); b.classList.remove("flip"); mem.first=null; mem.lock=false; },850);
+    sBad();
+  }
+}
+function finishMemory(){
+  clearInterval(mem.timer);
+  const best = store.get("chem_best_Memory",0);
+  const score = Math.max(0, 300 - mem.moves*5 - mem.sec*2);
+  if(score>best) store.set("chem_best_Memory",score);
+  const done=$("memDone");
+  done.style.display="block";
+  done.innerHTML=`🎉 全部配对成功！步数 ${mem.moves}，用时 ${mem.sec} 秒，得分 <b>${score}</b>。这些元素你已经记牢啦！`;
+  sGood(); refreshHome();
+  setTimeout(()=>{ endMemory(false); },3200);
+}
+function endMemory(early){
+  clearInterval(mem.timer);
+  hide("memoryScreen"); show("home"); refreshHome();
+}
+
+/* ================= 错题本 ================= */
+function addWrong(item){
+  const arr = store.get("chem_wrong",[]);
+  if(!arr.some(w=>w.q===item.q)) arr.push({q:item.q, opts:item.opts.filter(o=>o!==item.a).slice(0,3), a:item.a});
+  store.set("chem_wrong", arr.slice(-30));
+  refreshHome();
+}
+function showWrong(){
+  const arr = store.get("chem_wrong",[]);
+  $("wTotal").textContent = arr.length;
+  const box=$("wrongList"); box.innerHTML="";
+  if(!arr.length){ box.innerHTML=`<div class="empty-tip">还没有错题，先去玩几局吧！🌱</div>`; }
+  arr.forEach(w=>{
+    const d=document.createElement("div");
+    d.className="wrong-item";
+    d.innerHTML=`<div class="wq">${w.q}</div><div class="wa">✅ ${w.a}</div>`;
+    box.appendChild(d);
+  });
+  hide("home"); hide("quizScreen"); show("wrongScreen");
+}
+function clearWrong(){ store.set("chem_wrong",[]); showWrong(); refreshHome(); }
+
+/* ================= 秘籍 & 杂项 ================= */
+function showCheat(){ show("cheatOverlay"); }
+function toast(msg){
+  const t=$("toast"); t.textContent=msg; t.classList.add("show");
+  setTimeout(()=>t.classList.remove("show"),1400);
+}
+/* 键盘支持 */
+document.addEventListener("keydown",e=>{
+  if(!$("quizScreen").classList.contains("hidden")){
+    const i="abcd".indexOf(e.key.toLowerCase());
+    if(i>=0){ const b=$("optsBox").children[i]; if(b&&!b.disabled) b.click(); }
+    if(e.key==="Enter" && $("nextBtn").style.visibility==="visible") $("nextBtn").click();
+  }
+});
+</script>
+</body>
+</html>
